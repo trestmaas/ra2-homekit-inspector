@@ -160,8 +160,8 @@ class SettingsManager: ObservableObject {
 
     private init() {
         self.repeaterHost = UserDefaults.standard.string(forKey: SettingsKeys.repeaterHost) ?? ""
-        self.repeaterPort = UserDefaults.standard.integer(forKey: SettingsKeys.repeaterPort)
-        if self.repeaterPort == 0 { self.repeaterPort = 23 }
+        let storedPort = UserDefaults.standard.integer(forKey: SettingsKeys.repeaterPort)
+        self.repeaterPort = storedPort == 0 ? 23 : storedPort
         self.repeaterUsername = UserDefaults.standard.string(forKey: SettingsKeys.repeaterUsername) ?? "lutron"
         self.autoConnectOnLaunch = UserDefaults.standard.bool(forKey: SettingsKeys.autoConnectOnLaunch)
     }

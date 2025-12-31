@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct HomeKitDevicesView: View {
     @EnvironmentObject var appState: AppState
@@ -9,7 +10,7 @@ struct HomeKitDevicesView: View {
     @State private var selectedHome: String = "All Homes"
 
     var availableHomes: [String] {
-        var homes = Set(appState.homeKitDevices.map { $0.homeName })
+        let homes = Set(appState.homeKitDevices.map { $0.homeName })
         return ["All Homes"] + homes.sorted()
     }
 
@@ -69,11 +70,11 @@ struct HomeKitDevicesView: View {
                 .disabled(appState.homeKitDevices.isEmpty)
             }
             .padding()
-            .background(Color(NSColor.controlBackgroundColor))
+            .background(Color(uiColor: .secondarySystemBackground))
 
             Divider()
 
-            // Device Table
+            // Device List
             if appState.homeKitDevices.isEmpty {
                 EmptyStateView(
                     icon: "house.slash",
@@ -81,68 +82,8 @@ struct HomeKitDevicesView: View {
                     message: "Grant HomeKit access to view your devices."
                 )
             } else {
-                Table(filteredDevices, selection: $selectedDevice) {
-                    TableColumn("Name") { device in
-                        HStack {
-                            Image(systemName: device.isReachable ? "circle.fill" : "circle")
-                                .foregroundColor(device.isReachable ? .green : .red)
-                                .font(.caption2)
-                            Text(device.name)
-                        }
-                    }
-
-                    TableColumn("Room") { device in
-                        Text(device.roomName ?? "—")
-                            .foregroundColor(device.roomName == nil ? .secondary : .primary)
-                    }
-
-                    TableColumn("Home") { device in
-                        Text(device.homeName)
-                    }
-
-                    TableColumn("Type") { device in
-                        HStack {
-                            Image(systemName: device.isLightService ? "lightbulb" : "square.grid.2x2")
-                                .foregroundColor(.secondary)
-                            Text(device.isLightService ? "Light" : "Other")
-                        }
-                    }
-                    .width(80)
-
-                    TableColumn("Brightness") { device in
-                        if device.supportsBrightness {
-                            if let brightness = device.brightness {
-                                HStack {
-                                    ProgressView(value: Double(brightness), total: 100)
-                                        .frame(width: 60)
-                                    Text("\(brightness)%")
-                                        .monospacedDigit()
-                                        .frame(width: 40, alignment: .trailing)
-                                }
-                            } else {
-                                Text("Unknown")
-                                    .foregroundColor(.secondary)
-                            }
-                        } else {
-                            Text("—")
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .width(120)
-
-                    TableColumn("Status") { device in
-                        HStack {
-                            if device.isReachable {
-                                Label("Reachable", systemImage: "checkmark.circle.fill")
-                                    .foregroundColor(.green)
-                            } else {
-                                Label("Unreachable", systemImage: "xmark.circle.fill")
-                                    .foregroundColor(.red)
-                            }
-                        }
-                        .font(.caption)
-                    }
-                    .width(100)
+                List(filteredDevices, selection: $selectedDevice) { device in
+                    HomeKitDeviceRow(device: device)
                 }
                 .searchable(text: $searchText, prompt: "Filter devices...")
             }
@@ -180,8 +121,55 @@ struct HomeKitDevicesView: View {
             let reachable = device.isReachable ? "Yes" : "No"
             csv += "\"\(device.name)\",\"\(device.roomName ?? "")\",\"\(device.homeName)\",\"\(type)\",\(brightness),\(reachable)\n"
         }
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(csv, forType: .string)
+        UIPasteboard.general.string = csv
+    }
+}
+
+struct HomeKitDeviceRow: View {
+    let device: HomeKitDevice
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Image(systemName: device.isReachable ? "circle.fill" : "circle")
+                        .foregroundColor(device.isReachable ? .green : .red)
+                        .font(.caption2)
+                    Text(device.name)
+                        .font(.headline)
+                }
+
+                HStack {
+                    if let room = device.roomName {
+                        Text(room)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    Text("•")
+                        .foregroundColor(.secondary)
+                    Text(device.homeName)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Spacer()
+
+            if device.supportsBrightness, let brightness = device.brightness {
+                VStack(alignment: .trailing) {
+                    Text("\(brightness)%")
+                        .monospacedDigit()
+                        .font(.caption)
+                    ProgressView(value: Double(brightness), total: 100)
+                        .frame(width: 60)
+                }
+            }
+
+            Image(systemName: device.isLightService ? "lightbulb" : "square.grid.2x2")
+                .foregroundColor(.secondary)
+                .frame(width: 30)
+        }
+        .padding(.vertical, 4)
     }
 }
 

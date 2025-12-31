@@ -112,7 +112,7 @@ struct LoadingOverlay: View {
             .padding(32)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(NSColor.windowBackgroundColor))
+                    .fill(Color(uiColor: .systemBackground))
                     .shadow(radius: 10)
             )
         }

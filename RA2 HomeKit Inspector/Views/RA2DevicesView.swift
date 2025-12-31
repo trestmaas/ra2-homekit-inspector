@@ -1,9 +1,9 @@
 import SwiftUI
+import UIKit
 
 struct RA2DevicesView: View {
     @EnvironmentObject var appState: AppState
     @State private var searchText = ""
-    @State private var sortOrder = [KeyPathComparator(\RA2Device.name)]
     @State private var selectedDevice: RA2Device?
     @State private var showConnectionSheet = false
     @State private var isRefreshing = false
@@ -51,11 +51,11 @@ struct RA2DevicesView: View {
                 .disabled(appState.ra2Devices.isEmpty)
             }
             .padding()
-            .background(Color(NSColor.controlBackgroundColor))
+            .background(Color(uiColor: .secondarySystemBackground))
 
             Divider()
 
-            // Device Table
+            // Device List
             if appState.ra2Devices.isEmpty {
                 EmptyStateView(
                     icon: "lightbulb.slash",
@@ -65,83 +65,16 @@ struct RA2DevicesView: View {
                         : "Connect to your Main Repeater to view devices."
                 )
             } else {
-                Table(filteredDevices, selection: $selectedDevice, sortOrder: $sortOrder) {
-                    TableColumn("ID", value: \.integrationID) { device in
-                        Text("\(device.integrationID)")
-                            .monospacedDigit()
-                    }
-                    .width(50)
-
-                    TableColumn("Name", value: \.name) { device in
-                        Text(device.name)
-                    }
-
-                    TableColumn("Type") { device in
-                        HStack {
-                            Image(systemName: iconForDeviceType(device.deviceType))
-                                .foregroundColor(.secondary)
-                            Text(device.deviceType.rawValue)
+                List(filteredDevices, selection: $selectedDevice) { device in
+                    RA2DeviceRow(
+                        device: device,
+                        onSetLevel: { level in
+                            Task { await setDeviceLevel(device, level: level) }
+                        },
+                        onIdentify: {
+                            Task { await identifyDevice(device) }
                         }
-                    }
-                    .width(120)
-
-                    TableColumn("Location") { device in
-                        Text(device.locationName ?? "—")
-                            .foregroundColor(device.locationName == nil ? .secondary : .primary)
-                    }
-
-                    TableColumn("Level") { device in
-                        if let level = device.currentLevel {
-                            HStack {
-                                ProgressView(value: Double(level), total: 100)
-                                    .frame(width: 60)
-                                Text("\(level)%")
-                                    .monospacedDigit()
-                                    .frame(width: 40, alignment: .trailing)
-                            }
-                        } else {
-                            Text("—")
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .width(120)
-
-                    TableColumn("Actions") { device in
-                        HStack(spacing: 8) {
-                            if device.deviceType.supportsLevel {
-                                Button {
-                                    Task {
-                                        await setDeviceLevel(device, level: 100)
-                                    }
-                                } label: {
-                                    Image(systemName: "sun.max")
-                                }
-                                .buttonStyle(.borderless)
-                                .help("Set to 100%")
-
-                                Button {
-                                    Task {
-                                        await setDeviceLevel(device, level: 0)
-                                    }
-                                } label: {
-                                    Image(systemName: "moon")
-                                }
-                                .buttonStyle(.borderless)
-                                .help("Set to 0%")
-
-                                Button {
-                                    Task {
-                                        await identifyDevice(device)
-                                    }
-                                } label: {
-                                    Image(systemName: "flashlight.on.fill")
-                                }
-                                .buttonStyle(.borderless)
-                                .help("Identify (flash)")
-                            }
-                        }
-                    }
-                    .width(100)
+                    )
                 }
                 .searchable(text: $searchText, prompt: "Filter devices...")
             }
@@ -150,21 +83,6 @@ struct RA2DevicesView: View {
             RA2ConnectionSheet()
         }
         .navigationTitle("RA2 Devices")
-    }
-
-    private func iconForDeviceType(_ type: RA2DeviceType) -> String {
-        switch type {
-        case .dimmer:
-            return "lightbulb"
-        case .switch:
-            return "light.switch.2"
-        case .keypad:
-            return "rectangle.split.3x3"
-        case .occupancySensor:
-            return "figure.walk.motion"
-        case .unknown:
-            return "questionmark.circle"
-        }
     }
 
     private func refreshDevices() async {
@@ -204,8 +122,91 @@ struct RA2DevicesView: View {
             let level = device.currentLevel.map { "\($0)%" } ?? ""
             csv += "\(device.integrationID),\"\(device.name)\",\"\(device.deviceType.rawValue)\",\"\(device.locationName ?? "")\",\(level)\n"
         }
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(csv, forType: .string)
+        UIPasteboard.general.string = csv
+    }
+}
+
+struct RA2DeviceRow: View {
+    let device: RA2Device
+    let onSetLevel: (Int) -> Void
+    let onIdentify: () -> Void
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("#\(device.integrationID)")
+                        .font(.caption)
+                        .monospacedDigit()
+                        .foregroundColor(.secondary)
+                    Text(device.name)
+                        .font(.headline)
+                }
+
+                HStack {
+                    Image(systemName: iconForDeviceType(device.deviceType))
+                        .foregroundColor(.secondary)
+                    Text(device.deviceType.rawValue)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    if let location = device.locationName {
+                        Text("•")
+                            .foregroundColor(.secondary)
+                        Text(location)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+
+            Spacer()
+
+            if let level = device.currentLevel {
+                VStack(alignment: .trailing) {
+                    Text("\(level)%")
+                        .monospacedDigit()
+                        .font(.caption)
+                    ProgressView(value: Double(level), total: 100)
+                        .frame(width: 60)
+                }
+            }
+
+            if device.deviceType.supportsLevel {
+                HStack(spacing: 8) {
+                    Button { onSetLevel(100) } label: {
+                        Image(systemName: "sun.max")
+                    }
+                    .buttonStyle(.borderless)
+
+                    Button { onSetLevel(0) } label: {
+                        Image(systemName: "moon")
+                    }
+                    .buttonStyle(.borderless)
+
+                    Button { onIdentify() } label: {
+                        Image(systemName: "flashlight.on.fill")
+                    }
+                    .buttonStyle(.borderless)
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func iconForDeviceType(_ type: RA2DeviceType) -> String {
+        switch type {
+        case .dimmer:
+            return "lightbulb"
+        case .switch:
+            return "light.switch.2"
+        case .keypad:
+            return "rectangle.split.3x3"
+        case .occupancySensor:
+            return "figure.walk.motion"
+        case .unknown:
+            return "questionmark.circle"
+        }
     }
 }
 
@@ -224,51 +225,41 @@ struct RA2ConnectionSheet: View {
     @State private var errorMessage: String?
 
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Connect to Main Repeater")
-                .font(.headline)
-
+        NavigationView {
             Form {
-                TextField("IP Address:", text: $host)
-                    .textFieldStyle(.roundedBorder)
-
-                TextField("Port:", text: $port)
-                    .textFieldStyle(.roundedBorder)
-
-                TextField("Username:", text: $username)
-                    .textFieldStyle(.roundedBorder)
-
-                SecureField("Password:", text: $password)
-                    .textFieldStyle(.roundedBorder)
-            }
-            .padding()
-
-            if let error = errorMessage {
-                Text(error)
-                    .foregroundColor(.red)
-                    .font(.caption)
-            }
-
-            HStack {
-                Button("Cancel") {
-                    dismiss()
+                Section("Connection") {
+                    TextField("IP Address", text: $host)
+                    TextField("Port", text: $port)
+                        .keyboardType(.numberPad)
+                    TextField("Username", text: $username)
+                    SecureField("Password", text: $password)
                 }
-                .keyboardShortcut(.cancelAction)
 
-                Spacer()
-
-                Button("Connect") {
-                    Task {
-                        await connect()
+                if let error = errorMessage {
+                    Section {
+                        Text(error)
+                            .foregroundColor(.red)
                     }
                 }
-                .keyboardShortcut(.defaultAction)
-                .disabled(host.isEmpty || isConnecting)
             }
-            .padding()
+            .navigationTitle("Connect to Main Repeater")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Connect") {
+                        Task {
+                            await connect()
+                        }
+                    }
+                    .disabled(host.isEmpty || isConnecting)
+                }
+            }
         }
-        .frame(width: 350)
-        .padding()
+        .frame(minWidth: 400, minHeight: 300)
         .onAppear {
             host = settings.repeaterHost
             port = String(settings.repeaterPort)

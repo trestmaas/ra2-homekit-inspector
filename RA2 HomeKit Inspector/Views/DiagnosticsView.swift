@@ -142,7 +142,7 @@ struct DiffResultsView: View {
                 .disabled(results.isEmpty)
             }
             .padding()
-            .background(Color(NSColor.controlBackgroundColor))
+            .background(Color(uiColor: .secondarySystemBackground))
 
             Divider()
 
@@ -171,8 +171,7 @@ struct DiffResultsView: View {
         for result in filteredResults {
             csv += result.csvRow + "\n"
         }
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(csv, forType: .string)
+        UIPasteboard.general.string = csv
     }
 }
 
@@ -296,7 +295,7 @@ struct BrightnessTestView: View {
                 .disabled(results.isEmpty)
             }
             .padding()
-            .background(Color(NSColor.controlBackgroundColor))
+            .background(Color(uiColor: .secondarySystemBackground))
 
             Divider()
 
@@ -365,8 +364,7 @@ struct BrightnessTestView: View {
         for result in results {
             csv += result.csvRow + "\n"
         }
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(csv, forType: .string)
+        UIPasteboard.general.string = csv
     }
 }
 

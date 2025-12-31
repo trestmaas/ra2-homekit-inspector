@@ -12,9 +12,15 @@ struct ContentView: View {
 
     var body: some View {
         NavigationSplitView {
-            List(Tab.allCases, id: \.self, selection: $selectedTab) { tab in
-                Label(tab.rawValue, systemImage: iconForTab(tab))
-                    .tag(tab)
+            List {
+                ForEach(Tab.allCases, id: \.self) { tab in
+                    Button {
+                        selectedTab = tab
+                    } label: {
+                        Label(tab.rawValue, systemImage: iconForTab(tab))
+                    }
+                    .listRowBackground(selectedTab == tab ? Color.accentColor.opacity(0.2) : Color.clear)
+                }
             }
             .listStyle(.sidebar)
             .navigationSplitViewColumnWidth(min: 180, ideal: 200)
