@@ -224,15 +224,84 @@ struct RA2ConnectionSheet: View {
     @State private var isConnecting = false
     @State private var errorMessage: String?
 
+    // Discovery state
+    @State private var isScanning = false
+    @State private var scanProgress: Double = 0
+    @State private var discoveredDevices: [DiscoveredDevice] = []
+    @State private var showDiscoveryResults = false
+
+    private let discoveryService = NetworkDiscoveryService()
+
     var body: some View {
         NavigationView {
             Form {
                 Section("Connection") {
-                    TextField("IP Address", text: $host)
+                    HStack {
+                        TextField("IP Address", text: $host)
+                        Button {
+                            Task { await startDiscovery() }
+                        } label: {
+                            if isScanning {
+                                ProgressView()
+                                    .scaleEffect(0.7)
+                            } else {
+                                Image(systemName: "magnifyingglass.circle")
+                            }
+                        }
+                        .disabled(isScanning)
+                        .help("Scan network for Lutron devices")
+                    }
+
                     TextField("Port", text: $port)
                         .keyboardType(.numberPad)
                     TextField("Username", text: $username)
                     SecureField("Password", text: $password)
+                }
+
+                if isScanning {
+                    Section("Scanning Network") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            ProgressView(value: scanProgress)
+                            Text("Scanning for Lutron devices... \(Int(scanProgress * 100))%")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+
+                if !discoveredDevices.isEmpty {
+                    Section("Discovered Devices") {
+                        ForEach(discoveredDevices) { device in
+                            Button {
+                                host = device.ipAddress
+                                port = "23"
+                            } label: {
+                                HStack {
+                                    Image(systemName: device.isLutron ? "checkmark.circle.fill" : "questionmark.circle")
+                                        .foregroundColor(device.isLutron ? .green : .orange)
+                                    VStack(alignment: .leading) {
+                                        Text(device.ipAddress)
+                                            .font(.headline)
+                                        if device.isLutron {
+                                            Text("Lutron Device Detected")
+                                                .font(.caption)
+                                                .foregroundColor(.green)
+                                        } else {
+                                            Text("Telnet port open")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+                                    }
+                                    Spacer()
+                                    if host == device.ipAddress {
+                                        Image(systemName: "checkmark")
+                                            .foregroundColor(.accentColor)
+                                    }
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
                 }
 
                 if let error = errorMessage {
@@ -259,12 +328,44 @@ struct RA2ConnectionSheet: View {
                 }
             }
         }
-        .frame(minWidth: 400, minHeight: 300)
+        .frame(minWidth: 450, minHeight: 400)
         .onAppear {
             host = settings.repeaterHost
             port = String(settings.repeaterPort)
             username = settings.repeaterUsername
             password = settings.retrievePassword() ?? ""
+
+            // Auto-scan if no host is configured
+            if host.isEmpty {
+                Task { await startDiscovery() }
+            }
+        }
+    }
+
+    private func startDiscovery() async {
+        isScanning = true
+        scanProgress = 0
+        discoveredDevices = []
+        errorMessage = nil
+
+        let devices = await discoveryService.scanForLutronDevices { scanned, total in
+            Task { @MainActor in
+                scanProgress = Double(scanned) / Double(total)
+            }
+        }
+
+        await MainActor.run {
+            discoveredDevices = devices
+            isScanning = false
+
+            // Auto-select if we found a Lutron device
+            if let lutronDevice = devices.first(where: { $0.isLutron }) {
+                host = lutronDevice.ipAddress
+            }
+
+            if devices.isEmpty {
+                errorMessage = "No devices found. Make sure you're on the same network as the repeater."
+            }
         }
     }
 

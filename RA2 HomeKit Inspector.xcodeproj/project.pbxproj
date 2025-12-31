@@ -17,6 +17,7 @@
 		A1000008229F0008 /* HomeKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001229F1008 /* HomeKitService.swift */; };
 		A1000009229F0009 /* DiagnosticService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001229F1009 /* DiagnosticService.swift */; };
 		A1000010229F0010 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001229F1010 /* KeychainService.swift */; };
+		A1000017229F0017 /* NetworkDiscoveryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001229F1019 /* NetworkDiscoveryService.swift */; };
 		A1000011229F0011 /* RA2DevicesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001229F1011 /* RA2DevicesView.swift */; };
 		A1000012229F0012 /* HomeKitDevicesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001229F1012 /* HomeKitDevicesView.swift */; };
 		A1000013229F0013 /* DiagnosticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001229F1013 /* DiagnosticsView.swift */; };
@@ -37,6 +38,7 @@
 		A1000001229F1008 /* HomeKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeKitService.swift; sourceTree = "<group>"; };
 		A1000001229F1009 /* DiagnosticService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticService.swift; sourceTree = "<group>"; };
 		A1000001229F1010 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
+		A1000001229F1019 /* NetworkDiscoveryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkDiscoveryService.swift; sourceTree = "<group>"; };
 		A1000001229F1011 /* RA2DevicesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RA2DevicesView.swift; sourceTree = "<group>"; };
 		A1000001229F1012 /* HomeKitDevicesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeKitDevicesView.swift; sourceTree = "<group>"; };
 		A1000001229F1013 /* DiagnosticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsView.swift; sourceTree = "<group>"; };
@@ -120,6 +122,7 @@
 				A1000001229F1008 /* HomeKitService.swift */,
 				A1000001229F1009 /* DiagnosticService.swift */,
 				A1000001229F1010 /* KeychainService.swift */,
+				A1000001229F1019 /* NetworkDiscoveryService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -210,6 +213,7 @@
 				A1000008229F0008 /* HomeKitService.swift in Sources */,
 				A1000009229F0009 /* DiagnosticService.swift in Sources */,
 				A1000010229F0010 /* KeychainService.swift in Sources */,
+				A1000017229F0017 /* NetworkDiscoveryService.swift in Sources */,
 				A1000011229F0011 /* RA2DevicesView.swift in Sources */,
 				A1000012229F0012 /* HomeKitDevicesView.swift in Sources */,
 				A1000013229F0013 /* DiagnosticsView.swift in Sources */,
